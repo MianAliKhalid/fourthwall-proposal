@@ -138,7 +138,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
       pdfBuffer = await pdfResponse.arrayBuffer()
     } else {
       // Generate PDF on the fly from productsJson
-      const buffer = generatePdfBuffer({
+      const buffer = await generatePdfBuffer({
         products: products as Parameters<typeof generatePdfBuffer>[0]['products'],
         clientName: shareLink.document.clientName,
         clientTagline: shareLink.document.clientTagline || '',
