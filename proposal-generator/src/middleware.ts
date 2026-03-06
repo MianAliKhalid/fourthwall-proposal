@@ -86,8 +86,10 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next())
   }
 
-  // Block old login path - redirect to homepage
-  if (pathname === '/login') {
+  // Only allow specific path prefixes - everything else goes to homepage
+  const allowedPrefixes = ['/centralsystem', '/api/', '/getintowebsite', '/share/']
+  const isAllowedPath = pathname === '/' || allowedPrefixes.some((p) => pathname.startsWith(p))
+  if (!isAllowedPath) {
     return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)))
   }
 
