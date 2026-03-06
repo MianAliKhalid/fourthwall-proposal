@@ -229,43 +229,46 @@ function buildPdf(input: PdfInput): jsPDF {
 
     const tableX = MARGIN + (CONTENT_W - finalTableW) / 2;
 
-    // QTY row
-    pdf.setFillColor(...BLACK);
-    pdf.setTextColor(...WHITE);
+    // QTY row - purple bg, white text
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(tableFontSize);
 
+    // QTY label cell
+    pdf.setFillColor(...PURPLE_DARK);
     pdf.rect(tableX, y, LABEL_COL_W, ROW_H, "F");
+    pdf.setTextColor(...WHITE);
     pdf.text("QTY", tableX + LABEL_COL_W / 2, y + ROW_H * 0.7, {
       align: "center",
     });
 
+    // QTY data cells
     for (let i = 0; i < pricing.length; i++) {
       const x = tableX + LABEL_COL_W + i * finalDataColW;
+      pdf.setFillColor(...PURPLE);
       pdf.rect(x, y, finalDataColW, ROW_H, "F");
+      pdf.setTextColor(...WHITE);
       pdf.text(String(pricing[i][0]), x + finalDataColW / 2, y + ROW_H * 0.7, {
         align: "center",
       });
     }
 
-    pdf.setDrawColor(...PURPLE);
-    pdf.setLineWidth(BORDER_W);
-    pdf.rect(tableX, y, finalTableW, ROW_H, "S");
-
-    // PRICE row
+    // PRICE row - light bg, dark text
     y += ROW_H;
-    pdf.setFillColor(...GRAY_LIGHT);
     pdf.setFont("helvetica", "bold");
     pdf.setFontSize(priceFontSize);
-    pdf.setTextColor(...BLACK);
 
+    // PRICE label cell
+    pdf.setFillColor(...GRAY_LIGHT);
     pdf.rect(tableX, y, LABEL_COL_W, ROW_H, "F");
+    pdf.setTextColor(...BLACK);
     pdf.text("PRICE", tableX + LABEL_COL_W / 2, y + ROW_H * 0.7, {
       align: "center",
     });
 
+    // PRICE data cells
     for (let i = 0; i < pricing.length; i++) {
       const x = tableX + LABEL_COL_W + i * finalDataColW;
+      pdf.setFillColor(...WHITE);
       pdf.rect(x, y, finalDataColW, ROW_H, "F");
       pdf.setTextColor(...PURPLE_DARK);
       pdf.text(`$${pricing[i][1]}`, x + finalDataColW / 2, y + ROW_H * 0.7, {
@@ -273,9 +276,11 @@ function buildPdf(input: PdfInput): jsPDF {
       });
     }
 
-    pdf.setDrawColor(200, 200, 200);
+    // Table borders
+    pdf.setDrawColor(...PURPLE);
     pdf.setLineWidth(BORDER_W);
-    pdf.rect(tableX, y, finalTableW, ROW_H, "S");
+    pdf.rect(tableX, y - ROW_H, finalTableW, ROW_H * 2, "S");
+    pdf.line(tableX, y, tableX + finalTableW, y);
 
     pdf.setDrawColor(200, 200, 200);
     pdf.setLineWidth(BORDER_W);
