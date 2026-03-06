@@ -5,7 +5,7 @@ import { createAuditLog } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    const response = NextResponse.redirect(new URL('/login', request.url))
+    const response = NextResponse.redirect(new URL('/', request.url))
 
     const session = await getIronSession<SessionData>(request, response, {
       password: process.env.SESSION_SECRET as string,
@@ -37,6 +37,6 @@ export async function POST(request: NextRequest) {
     return response
   } catch (error) {
     console.error('Logout error:', error)
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL('/', request.url))
   }
 }

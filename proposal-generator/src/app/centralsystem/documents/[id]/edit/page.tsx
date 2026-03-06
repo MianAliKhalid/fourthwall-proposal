@@ -40,7 +40,7 @@ export default function DocumentEditPage() {
           return;
         }
         if (res.status === 401) {
-          router.push("/login");
+          router.push("/");
           return;
         }
         if (!res.ok) {
@@ -118,7 +118,7 @@ export default function DocumentEditPage() {
             {error || "Document not found"}
           </h2>
           <Link
-            href="/documents"
+            href="/centralsystem/documents"
             className="text-sm text-brand-600 hover:text-brand-700 font-medium"
           >
             Back to Documents
@@ -134,7 +134,7 @@ export default function DocumentEditPage() {
       <div className="flex items-center justify-between mb-4 shrink-0">
         <div className="flex items-center gap-3 min-w-0">
           <Link
-            href="/documents"
+            href="/centralsystem/documents"
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors shrink-0"
           >
             <svg

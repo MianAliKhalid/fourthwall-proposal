@@ -220,7 +220,7 @@ export default function DocumentsPage() {
           <p className="text-gray-500 text-sm mt-1">{pagination.total} document{pagination.total !== 1 ? 's' : ''} total</p>
         </div>
         <Link
-          href="/new-proposal"
+          href="/centralsystem/new-proposal"
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 hover:shadow-lg hover:shadow-brand-600/25 transition-all duration-200 shrink-0"
         >
           <span className="text-base leading-none">+</span>
@@ -304,7 +304,7 @@ export default function DocumentsPage() {
               {search || folderId ? 'Try adjusting your search or filter.' : 'Create your first proposal to get started.'}
             </p>
             {!search && !folderId && (
-              <Link href="/new-proposal" className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors">
+              <Link href="/centralsystem/new-proposal" className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors">
                 <span className="text-base leading-none">+</span>
                 Create Proposal
               </Link>

@@ -13,7 +13,7 @@ interface UserInfo {
 
 const navItems = [
   {
-    href: '/dashboard',
+    href: '/centralsystem/dashboard',
     label: 'Dashboard',
     icon: (
       <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -25,7 +25,7 @@ const navItems = [
     ),
   },
   {
-    href: '/documents',
+    href: '/centralsystem/documents',
     label: 'Documents',
     icon: (
       <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -35,7 +35,7 @@ const navItems = [
     ),
   },
   {
-    href: '/folders',
+    href: '/centralsystem/folders',
     label: 'Folders',
     icon: (
       <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -44,7 +44,7 @@ const navItems = [
     ),
   },
   {
-    href: '/new-proposal',
+    href: '/centralsystem/new-proposal',
     label: 'New Proposal',
     icon: (
       <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -53,7 +53,7 @@ const navItems = [
     ),
   },
   {
-    href: '/share-links',
+    href: '/centralsystem/share-links',
     label: 'Share Links',
     icon: (
       <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -67,7 +67,7 @@ const navItems = [
 ]
 
 const adminNavItem = {
-  href: '/admin',
+  href: '/centralsystem/admin',
   label: 'Admin',
   icon: (
     <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -88,7 +88,7 @@ export default function DashboardShell({ children, initialUser }: { children: Re
     setLoggingOut(true)
     try {
       await fetch('/api/auth/logout', { method: 'POST' })
-      router.push('/login')
+      router.push('/')
       router.refresh()
     } catch {
       setLoggingOut(false)
@@ -128,7 +128,7 @@ export default function DashboardShell({ children, initialUser }: { children: Re
 
         <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
           {allNavItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
+            const isActive = pathname === item.href || (item.href !== '/centralsystem/dashboard' && pathname.startsWith(item.href))
             return (
               <Link
                 key={item.href}
@@ -191,7 +191,7 @@ export default function DashboardShell({ children, initialUser }: { children: Re
 
           <div className="flex items-center gap-3">
             <Link
-              href="/new-proposal"
+              href="/centralsystem/new-proposal"
               className="hidden sm:flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 hover:shadow-lg hover:shadow-brand-600/25 transition-all duration-200"
             >
               <span className="text-base leading-none">+</span>

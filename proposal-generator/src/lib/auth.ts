@@ -78,13 +78,13 @@ export async function getCurrentUser(session: IronSession<SessionData>) {
  */
 export async function requireAuth(session: IronSession<SessionData>) {
   if (!session.isLoggedIn || !session.userId) {
-    redirect('/login')
+    redirect('/')
   }
 
   const user = await getCurrentUser(session)
   if (!user || !user.isActive) {
     session.destroy()
-    redirect('/login')
+    redirect('/')
   }
 
   return user
@@ -97,7 +97,7 @@ export async function requireAdmin(session: IronSession<SessionData>) {
   const user = await requireAuth(session)
 
   if (user.role !== 'ADMIN') {
-    redirect('/login')
+    redirect('/')
   }
 
   return user

@@ -184,7 +184,7 @@ export default function DashboardPage() {
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">Recent Documents</h2>
-          <Link href="/documents" className="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors">
+          <Link href="/centralsystem/documents" className="text-sm font-medium text-brand-600 hover:text-brand-700 transition-colors">
             View all
           </Link>
         </div>
@@ -200,7 +200,7 @@ export default function DashboardPage() {
             <h3 className="text-base font-semibold text-gray-900 mb-1">No documents yet</h3>
             <p className="text-sm text-gray-500 mb-4">Create your first proposal to get started.</p>
             <Link
-              href="/new-proposal"
+              href="/centralsystem/new-proposal"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl hover:bg-brand-700 transition-colors"
             >
               <span className="text-base leading-none">+</span>
@@ -235,7 +235,7 @@ export default function DashboardPage() {
                     </span>
                   )}
                   <button
-                    onClick={() => router.push(`/documents?search=${encodeURIComponent(doc.title)}`)}
+                    onClick={() => router.push(`/centralsystem/documents?search=${encodeURIComponent(doc.title)}`)}
                     className="p-1.5 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-colors cursor-pointer"
                     title="View"
                   >
@@ -287,7 +287,7 @@ export default function DashboardPage() {
 
       {/* Quick create FAB on mobile */}
       <Link
-        href="/new-proposal"
+        href="/centralsystem/new-proposal"
         className="fixed bottom-6 right-6 sm:hidden w-14 h-14 bg-brand-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-brand-600/30 hover:bg-brand-700 transition-all z-50"
       >
         <span className="text-2xl leading-none">+</span>

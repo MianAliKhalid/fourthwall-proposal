@@ -138,7 +138,7 @@ export default function NewProposalPage() {
         const docData = await docRes.json();
         if (docData.document?.id) {
           // Redirect to the editor for chat-based editing
-          router.push(`/documents/${docData.document.id}/edit`);
+          router.push(`/centralsystem/documents/${docData.document.id}/edit`);
           return;
         }
       } catch {

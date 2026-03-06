@@ -41,6 +41,11 @@ export default function FoldersPage() {
   // Folder search
   const [folderFilter, setFolderFilter] = useState('')
 
+  // Multi-select
+  const [selectedFolderIds, setSelectedFolderIds] = useState<Set<string>>(new Set())
+  const [bulkDeleteModal, setBulkDeleteModal] = useState(false)
+  const [bulkDeleteAction, setBulkDeleteAction] = useState<'unfile' | 'delete_docs'>('unfile')
+
   // Modals
   const [createModal, setCreateModal] = useState<{ parentId: string | null } | null>(null)
   const [renameModal, setRenameModal] = useState<{ id: string; name: string } | null>(null)
@@ -109,6 +114,26 @@ export default function FoldersPage() {
     setDocsSearch('')
     setDocsSearchInput('')
     fetchFolderDocs(id)
+  }
+
+  // Multi-select helpers
+  function toggleFolderSelect(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    setSelectedFolderIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function selectAllFolders() {
+    const all = getAllFolderIds(folders)
+    setSelectedFolderIds(new Set(all))
+  }
+
+  function clearSelection() {
+    setSelectedFolderIds(new Set())
   }
 
   // Filter and paginate docs
@@ -188,9 +213,19 @@ export default function FoldersPage() {
     return ids
   }
 
-  function getFirstOtherFolderId(excludeId: string): string | null {
+  function getLeafFolderIds(nodes: FolderNode[]): string[] {
+    const ids: string[] = []
+    for (const n of nodes) {
+      if (n.children.length === 0) ids.push(n.id)
+      ids.push(...getLeafFolderIds(n.children))
+    }
+    return ids
+  }
+
+  function getFirstOtherFolderId(excludeIds: string[]): string | null {
+    const excludeSet = new Set(excludeIds)
     const all = getAllFolderIds(folders)
-    return all.find((id) => id !== excludeId) || null
+    return all.find((id) => !excludeSet.has(id)) || null
   }
 
   async function handleDelete() {
@@ -214,9 +249,8 @@ export default function FoldersPage() {
       setDeleteAction('unfile')
       setMoveToFolderId('')
 
-      // Auto-select another folder if the deleted one was selected
       if (selectedFolder === deletedId) {
-        const nextId = getFirstOtherFolderId(deletedId)
+        const nextId = getFirstOtherFolderId([deletedId])
         if (nextId) {
           setSelectedFolder(nextId)
           fetchFolderDocs(nextId)
@@ -228,6 +262,54 @@ export default function FoldersPage() {
       fetchFolders()
     } catch {
       setError('Network error')
+    }
+    setActionLoading(false)
+  }
+
+  async function handleBulkDelete() {
+    if (selectedFolderIds.size === 0) return
+    setActionLoading(true)
+    setError('')
+
+    // Only delete leaf folders (no children) to avoid issues
+    const leafIds = getLeafFolderIds(folders).filter((id) => selectedFolderIds.has(id))
+    const nonLeafCount = selectedFolderIds.size - leafIds.length
+
+    if (leafIds.length === 0) {
+      setError('Selected folders contain sub-folders. Remove sub-folders first.')
+      setActionLoading(false)
+      return
+    }
+
+    let failed = 0
+    for (const id of leafIds) {
+      try {
+        const params = new URLSearchParams({ action: bulkDeleteAction })
+        const res = await fetch(`/api/folders/${id}?${params}`, { method: 'DELETE' })
+        if (!res.ok) failed++
+      } catch {
+        failed++
+      }
+    }
+
+    if (selectedFolder && selectedFolderIds.has(selectedFolder)) {
+      const nextId = getFirstOtherFolderId([...selectedFolderIds])
+      if (nextId) {
+        setSelectedFolder(nextId)
+        fetchFolderDocs(nextId)
+      } else {
+        setSelectedFolder(null)
+        setFolderDocs([])
+      }
+    }
+
+    setBulkDeleteModal(false)
+    setBulkDeleteAction('unfile')
+    setSelectedFolderIds(new Set())
+    fetchFolders()
+
+    if (failed > 0 || nonLeafCount > 0) {
+      setError(`${failed > 0 ? `${failed} folder(s) failed to delete. ` : ''}${nonLeafCount > 0 ? `${nonLeafCount} folder(s) skipped (contain sub-folders).` : ''}`)
     }
     setActionLoading(false)
   }
@@ -270,6 +352,7 @@ export default function FoldersPage() {
   function FolderTreeItem({ folder, depth = 0 }: { folder: FolderNode; depth?: number }) {
     const isExpanded = expanded.has(folder.id)
     const isSelected = selectedFolder === folder.id
+    const isChecked = selectedFolderIds.has(folder.id)
     const hasChildren = folder.children.length > 0
     const isMenuOpen = openMenuId === folder.id
 
@@ -277,15 +360,24 @@ export default function FoldersPage() {
       <div>
         <div
           className={`
-            flex items-center gap-2 py-2 pr-2 cursor-pointer transition-all duration-150 group relative
+            flex items-center gap-1.5 py-2 pr-2 cursor-pointer transition-all duration-150 group
             ${isSelected
               ? 'bg-brand-50 text-brand-700 border-l-[3px] border-brand-600'
               : 'hover:bg-gray-50 text-gray-700 border-l-[3px] border-transparent'
             }
           `}
-          style={{ paddingLeft: `${depth * 16 + 12}px` }}
+          style={{ paddingLeft: `${depth * 16 + 8}px` }}
           onClick={() => selectFolder(folder.id)}
         >
+          {/* Checkbox for multi-select */}
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onClick={(e) => toggleFolderSelect(folder.id, e)}
+            onChange={() => {}}
+            className="w-3.5 h-3.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500 cursor-pointer shrink-0"
+          />
+
           {/* Expand toggle */}
           <button
             onClick={(e) => { e.stopPropagation(); toggleExpand(folder.id) }}
@@ -293,12 +385,12 @@ export default function FoldersPage() {
           >
             {hasChildren && (
               <span className={`text-[10px] text-gray-400 transition-transform duration-200 inline-block ${isExpanded ? 'rotate-90' : ''}`}>
-                &#9654;
+                {'\u25B6'}
               </span>
             )}
           </button>
 
-          {/* Folder icon - simple shape */}
+          {/* Folder icon */}
           <svg className={`w-4 h-4 shrink-0 ${isSelected ? 'text-brand-500' : 'text-gray-400'}`} viewBox="0 0 20 20" fill="currentColor">
             <rect x="2" y="5" width="16" height="12" rx="1.5" opacity="0.3" />
             <rect x="2" y="7" width="16" height="10" rx="1.5" />
@@ -311,14 +403,14 @@ export default function FoldersPage() {
             {folder._count.documents}
           </span>
 
-          {/* Actions dropdown */}
+          {/* Actions dropdown - always visible */}
           <div className="relative" ref={isMenuOpen ? menuRef : undefined}>
             <button
               onClick={(e) => {
                 e.stopPropagation()
                 setOpenMenuId(isMenuOpen ? null : folder.id)
               }}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+              className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors cursor-pointer"
               title="Actions"
             >
               <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
@@ -329,7 +421,24 @@ export default function FoldersPage() {
             </button>
 
             {isMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-lg border border-gray-200 shadow-lg z-20 py-1">
+              <div className="fixed z-[100] w-40 bg-white rounded-lg border border-gray-200 shadow-xl py-1"
+                style={{
+                  top: 'var(--menu-top)',
+                  left: 'var(--menu-left)',
+                }}
+                ref={(el) => {
+                  if (el) {
+                    const btn = el.parentElement?.querySelector('button')
+                    if (btn) {
+                      const rect = btn.getBoundingClientRect()
+                      el.style.setProperty('--menu-top', `${rect.bottom + 4}px`)
+                      el.style.setProperty('--menu-left', `${rect.right - 160}px`)
+                      el.style.top = `${rect.bottom + 4}px`
+                      el.style.left = `${rect.right - 160}px`
+                    }
+                  }
+                }}
+              >
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -406,8 +515,36 @@ export default function FoldersPage() {
         </button>
       </div>
 
-      {/* Unified panel - single card with tree sidebar + content */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      {/* Bulk action bar */}
+      {selectedFolderIds.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-brand-50 border border-brand-200 rounded-xl animate-fade-in-up">
+          <span className="text-sm font-medium text-brand-700">
+            {selectedFolderIds.size} folder{selectedFolderIds.size !== 1 ? 's' : ''} selected
+          </span>
+          <div className="flex-1" />
+          <button
+            onClick={selectAllFolders}
+            className="px-3 py-1.5 text-xs font-medium text-brand-600 hover:bg-brand-100 rounded-lg transition-colors cursor-pointer"
+          >
+            Select All
+          </button>
+          <button
+            onClick={clearSelection}
+            className="px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+          >
+            Clear
+          </button>
+          <button
+            onClick={() => { setBulkDeleteModal(true); setBulkDeleteAction('unfile'); setError('') }}
+            className="px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors cursor-pointer"
+          >
+            Delete {selectedFolderIds.size}
+          </button>
+        </div>
+      )}
+
+      {/* Unified panel */}
+      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
         <div className="flex flex-col lg:flex-row min-h-[500px]">
           {/* Left sidebar - folder tree */}
           <div className="lg:w-[280px] lg:shrink-0 border-b lg:border-b-0 lg:border-r border-gray-200">
@@ -540,7 +677,7 @@ export default function FoldersPage() {
                             <p className="text-xs text-gray-500">{doc.clientName} -- {new Date(doc.createdAt).toLocaleDateString()}</p>
                           </div>
                           <Link
-                            href={`/documents?search=${encodeURIComponent(doc.title)}`}
+                            href={`/centralsystem/documents?search=${encodeURIComponent(doc.title)}`}
                             className="text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
                           >
                             View
@@ -705,6 +842,52 @@ export default function FoldersPage() {
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
               >
                 {actionLoading ? 'Deleting...' : 'Delete Folder'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Modal */}
+      {bulkDeleteModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl p-6 max-w-md w-full mx-4 animate-fade-in-up">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete {selectedFolderIds.size} Folder{selectedFolderIds.size !== 1 ? 's' : ''}</h3>
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{error}</div>
+            )}
+            <p className="text-sm text-gray-500 mb-4">
+              This will delete the selected folders. Folders with sub-folders will be skipped.
+            </p>
+
+            <div className="space-y-2 mb-6">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Documents in deleted folders:</p>
+              <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${bulkDeleteAction === 'unfile' ? 'border-brand-300 bg-brand-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                <input type="radio" name="bulkDeleteAction" value="unfile" checked={bulkDeleteAction === 'unfile'} onChange={() => setBulkDeleteAction('unfile')} className="text-brand-600 focus:ring-brand-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Remove from folder</p>
+                  <p className="text-xs text-gray-500">Keep documents, just unfile them.</p>
+                </div>
+              </label>
+              <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${bulkDeleteAction === 'delete_docs' ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                <input type="radio" name="bulkDeleteAction" value="delete_docs" checked={bulkDeleteAction === 'delete_docs'} onChange={() => setBulkDeleteAction('delete_docs')} className="text-red-600 focus:ring-red-500" />
+                <div>
+                  <p className="text-sm font-medium text-red-700">Delete documents too</p>
+                  <p className="text-xs text-red-500">Permanently remove all documents.</p>
+                </div>
+              </label>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => { setBulkDeleteModal(false); setError('') }} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors cursor-pointer">
+                Cancel
+              </button>
+              <button
+                onClick={handleBulkDelete}
+                disabled={actionLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {actionLoading ? 'Deleting...' : `Delete ${selectedFolderIds.size} Folder${selectedFolderIds.size !== 1 ? 's' : ''}`}
               </button>
             </div>
           </div>

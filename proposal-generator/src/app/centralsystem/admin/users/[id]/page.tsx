@@ -178,7 +178,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
     return (
       <div className="max-w-5xl mx-auto text-center py-16">
         <p className="text-gray-500">User not found.</p>
-        <Link href="/admin/users" className="text-brand-600 hover:underline text-sm mt-2 inline-block">
+        <Link href="/centralsystem/admin/users" className="text-brand-600 hover:underline text-sm mt-2 inline-block">
           Back to Users
         </Link>
       </div>
@@ -189,7 +189,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
     <div className="max-w-5xl mx-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm mb-6">
-        <Link href="/admin/users" className="text-gray-500 hover:text-brand-600 transition-colors">Users</Link>
+        <Link href="/centralsystem/admin/users" className="text-gray-500 hover:text-brand-600 transition-colors">Users</Link>
         <svg className="w-4 h-4 text-gray-300" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
           <path d="M6 3l5 5-5 5" />
         </svg>

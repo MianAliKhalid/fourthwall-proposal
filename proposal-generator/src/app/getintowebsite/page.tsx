@@ -37,7 +37,7 @@ export default function LoginPage() {
 
       // Successful login - redirect to home or the original page
       const params = new URLSearchParams(window.location.search)
-      const from = params.get('from') || '/dashboard'
+      const from = params.get('from') || '/centralsystem/dashboard'
       router.push(from)
       router.refresh()
     } catch {

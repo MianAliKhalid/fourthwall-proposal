@@ -101,7 +101,7 @@ export default function AdminOverviewPage() {
       <div className="bg-white rounded-2xl border border-gray-200 shadow-sm">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="text-base font-semibold text-gray-900">Recent Activity</h2>
-          <Link href="/admin/logs" className="text-sm font-medium text-brand-600 hover:text-brand-700">
+          <Link href="/centralsystem/admin/logs" className="text-sm font-medium text-brand-600 hover:text-brand-700">
             View all
           </Link>
         </div>

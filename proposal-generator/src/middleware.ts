@@ -3,11 +3,11 @@ import { getIronSession } from 'iron-session'
 import { SessionData } from './lib/session'
 
 // Routes that don't require authentication
-const publicPaths = ['/login', '/api/auth/login', '/api/auth/logout', '/api/public']
+const publicPaths = ['/', '/getintowebsite', '/api/auth/login', '/api/auth/logout', '/api/public']
 const publicPrefixes = ['/share/', '/api/public/']
 
 // Routes that require admin role
-const adminPrefixes = ['/admin', '/api/admin']
+const adminPrefixes = ['/centralsystem/admin', '/api/admin']
 
 // HTTP methods that mutate state
 const MUTATION_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
@@ -110,14 +110,12 @@ export async function middleware(request: NextRequest) {
 
   // Check if user is logged in
   if (!session.isLoggedIn || !session.userId) {
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('from', pathname)
-    return applySecurityHeaders(NextResponse.redirect(loginUrl))
+    return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)))
   }
 
   // Check admin routes
   if (isAdminRoute(pathname) && session.role !== 'ADMIN') {
-    return applySecurityHeaders(NextResponse.redirect(new URL('/login', request.url)))
+    return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)))
   }
 
   return applySecurityHeaders(response)
