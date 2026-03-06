@@ -72,11 +72,6 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="max-w-md w-full text-center">
-            <div className="w-20 h-20 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-              </svg>
-            </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-3">Link Unavailable</h1>
             <p className="text-gray-500 mb-8 leading-relaxed">{error}</p>
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
@@ -92,14 +87,7 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
           </div>
         </div>
         <footer className="py-6 text-center">
-          <div className="flex items-center justify-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center">
-              <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-              </svg>
-            </div>
-            <span className="text-xs text-gray-400">Powered by <span className="font-semibold text-gray-500">Plucky Reach</span></span>
-          </div>
+          <span className="text-xs text-gray-400">Powered by <span className="font-semibold text-gray-500">Plucky Reach</span></span>
         </footer>
       </div>
     )
@@ -110,11 +98,7 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-            </svg>
-          </div>
+          <div className="w-8 h-8 border-3 border-gray-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-sm text-gray-500">Loading document...</p>
         </div>
       </div>
@@ -129,11 +113,6 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-600/20 shrink-0">
-                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                </svg>
-              </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900 truncate">
                   {meta?.title || 'Shared Document'}
@@ -181,12 +160,7 @@ export default function PublicSharePage({ params }: { params: Promise<{ token: s
 
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-3 shrink-0">
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-center gap-2">
-          <div className="w-5 h-5 rounded bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center">
-            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-            </svg>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-center">
           <span className="text-xs text-gray-400">Powered by <span className="font-medium text-gray-500">Plucky Reach</span></span>
         </div>
       </footer>

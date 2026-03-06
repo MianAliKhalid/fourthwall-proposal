@@ -48,6 +48,7 @@ export default function DocumentsPage() {
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const [folderSearch, setFolderSearch] = useState('')
   const [showCreateFolder, setShowCreateFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
@@ -564,24 +565,16 @@ export default function DocumentsPage() {
       {shareDocId && shareUrl && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
           <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl p-6 max-w-md w-full mx-4 animate-fade-in-up">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
-                  <circle cx="8" cy="8" r="6.5" />
-                  <path d="M5 8l2 2 4-4" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Share Link Created</h3>
-                <p className="text-xs text-gray-500">Link copied to clipboard</p>
-              </div>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Share Link Created</h3>
+              <p className="text-xs text-gray-500 mt-1">Copy the link below to share this document.</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3 mb-6">
               <p className="text-sm text-gray-700 font-mono break-all">{shareUrl}</p>
             </div>
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => { setShareDocId(null); setShareUrl(null) }}
+                onClick={() => { setShareDocId(null); setShareUrl(null); setCopied(false) }}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors cursor-pointer"
               >
                 Close
@@ -590,12 +583,17 @@ export default function DocumentsPage() {
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(shareUrl)
-                    showToast('Link copied to clipboard')
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
                   } catch { /* ignore */ }
                 }}
-                className="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-colors cursor-pointer"
+                className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors cursor-pointer ${
+                  copied
+                    ? 'bg-green-600 text-white'
+                    : 'bg-brand-600 text-white hover:bg-brand-700'
+                }`}
               >
-                Copy Again
+                {copied ? 'Copied!' : 'Copy Link'}
               </button>
             </div>
           </div>
