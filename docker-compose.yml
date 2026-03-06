@@ -1,0 +1,67 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: fourthwall-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fourthwall_proposals
+      POSTGRES_USER: fourthwall_admin
+      POSTGRES_PASSWORD: "Fw$$Pr0p2026!Secure"
+    ports:
+      - "5432:5432"
+    volumes:
+      - fourthwall_pgdata:/var/lib/postgresql/data
+    networks:
+      - fourthwall-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fourthwall_admin -d fourthwall_proposals"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: ./proposal-generator
+      dockerfile: Dockerfile
+    container_name: fourthwall-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env.docker
+    environment:
+      - NODE_ENV=production
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/login"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    networks:
+      - fourthwall-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: fourthwall-nginx
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    networks:
+      - fourthwall-net
+
+volumes:
+  fourthwall_pgdata:
+
+networks:
+  fourthwall-net:
+    driver: bridge

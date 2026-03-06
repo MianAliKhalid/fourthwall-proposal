@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+}
+
+model User {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  passwordHash String
+  salt         String
+  role         Role      @default(USER)
+  displayName  String?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  lastLogin    DateTime?
+
+  documents    Document[]
+  folders      Folder[]
+  shareLinks   ShareLink[]
+  chatMessages ChatMessage[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Document {
+  id             String    @id @default(cuid())
+  title          String
+  clientName     String
+  clientTagline  String?
+  productsJson   Json?
+  pdfUrl         String?
+  thumbnailUrl   String?
+  createdById    String
+  createdBy      User      @relation(fields: [createdById], references: [id])
+  folderId       String?
+  folder         Folder?   @relation(fields: [folderId], references: [id])
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  shareLinks     ShareLink[]
+  chatMessages   ChatMessage[]
+
+  @@map("documents")
+}
+
+model Folder {
+  id        String   @id @default(cuid())
+  name      String
+  parentId  String?
+  parent    Folder?  @relation("FolderTree", fields: [parentId], references: [id])
+  children  Folder[] @relation("FolderTree")
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents Document[]
+
+  @@map("folders")
+}
+
+model ShareLink {
+  id          String    @id @default(cuid())
+  token       String    @unique
+  documentId  String
+  document    Document  @relation(fields: [documentId], references: [id])
+  createdById String
+  createdBy   User      @relation(fields: [createdById], references: [id])
+  isActive    Boolean   @default(true)
+  expiresAt   DateTime?
+  accessCount Int       @default(0)
+  createdAt   DateTime  @default(now())
+
+  @@index([token])
+  @@map("share_links")
+}
+
+model ChatMessage {
+  id         String      @id @default(cuid())
+  documentId String
+  document   Document    @relation(fields: [documentId], references: [id])
+  userId     String
+  user       User        @relation(fields: [userId], references: [id])
+  role       MessageRole
+  content    String
+  metadata   Json?
+  createdAt  DateTime    @default(now())
+
+  @@map("chat_messages")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id])
+  action       String
+  resourceType String
+  resourceId   String?
+  details      Json?
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@map("audit_logs")
+}
