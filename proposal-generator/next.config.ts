@@ -2,6 +2,21 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  async redirects() {
+    return [
+      // Block all old routes - redirect to homepage
+      { source: '/login', destination: '/', permanent: true },
+      { source: '/dashboard', destination: '/', permanent: true },
+      { source: '/documents', destination: '/', permanent: true },
+      { source: '/documents/:path*', destination: '/', permanent: true },
+      { source: '/folders', destination: '/', permanent: true },
+      { source: '/folders/:path*', destination: '/', permanent: true },
+      { source: '/new-proposal', destination: '/', permanent: true },
+      { source: '/share-links', destination: '/', permanent: true },
+      { source: '/admin', destination: '/', permanent: true },
+      { source: '/admin/:path*', destination: '/', permanent: true },
+    ]
+  },
   images: {
     remotePatterns: [
       {

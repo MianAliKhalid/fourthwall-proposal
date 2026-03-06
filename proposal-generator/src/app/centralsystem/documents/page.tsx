@@ -187,19 +187,38 @@ export default function DocumentsPage() {
   async function handleShare(docId: string) {
     setActionLoading(true)
     try {
-      const res = await fetch('/api/share-links', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ documentId: docId }),
-      })
-      const data = await res.json()
-      if (res.ok) {
-        const url = `${window.location.origin}/share/${data.shareLink.token}`
+      // Check for existing active share link first
+      const listRes = await fetch('/api/share-links')
+      const listData = await listRes.json()
+      const existing = (listData.shareLinks || []).find(
+        (l: { document: { id: string }; effectiveStatus: string }) =>
+          l.document.id === docId && l.effectiveStatus === 'active'
+      )
+
+      if (existing) {
+        // Reuse existing share link
+        const url = `${window.location.origin}/share/${existing.token}`
         setShareUrl(url)
         try {
           await navigator.clipboard.writeText(url)
           showToast('Link copied to clipboard')
         } catch { /* ignore */ }
+      } else {
+        // Create new share link only if none exists
+        const res = await fetch('/api/share-links', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ documentId: docId }),
+        })
+        const data = await res.json()
+        if (res.ok) {
+          const url = `${window.location.origin}/share/${data.shareLink.token}`
+          setShareUrl(url)
+          try {
+            await navigator.clipboard.writeText(url)
+            showToast('Link copied to clipboard')
+          } catch { /* ignore */ }
+        }
       }
     } catch {
       // Silently handle
