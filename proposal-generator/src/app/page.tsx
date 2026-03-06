@@ -36,16 +36,16 @@ interface Brick {
   maxHits: number
 }
 
-const COLORS = ['#7c3aed', '#8b5cf6', '#a78bfa', '#6d28d9', '#5b21b6', '#4c1d95']
-const CANVAS_WIDTH = 480
-const CANVAS_HEIGHT = 640
+const COLORS = ['#7c3aed', '#8b5cf6', '#a78bfa', '#6d28d9', '#5b21b6', '#4c1d95', '#c084fc', '#9333ea']
 
 export default function HomePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [gameState, setGameState] = useState<'idle' | 'playing' | 'won' | 'lost'>('idle')
   const [score, setScore] = useState(0)
   const [highScore, setHighScore] = useState(0)
   const [lives, setLives] = useState(3)
+  const [canvasSize, setCanvasSize] = useState({ w: 960, h: 600 })
   const gameRef = useRef<{
     ball: Ball
     paddle: Paddle
@@ -55,30 +55,54 @@ export default function HomePage() {
     score: number
     lives: number
     mouseX: number
+    W: number
+    H: number
   }>({
-    ball: { x: 240, y: 500, vx: 3, vy: -4, radius: 6 },
-    paddle: { x: 200, width: 80, height: 12 },
+    ball: { x: 480, y: 500, vx: 4, vy: -5, radius: 8 },
+    paddle: { x: 400, width: 120, height: 14 },
     bricks: [],
     particles: [],
     animId: 0,
     score: 0,
     lives: 3,
-    mouseX: 240,
+    mouseX: 480,
+    W: 960,
+    H: 600,
   })
 
+  // Responsive canvas sizing
+  useEffect(() => {
+    function updateSize() {
+      const w = window.innerWidth
+      const h = window.innerHeight
+      // Use full width, leave room for header/footer (about 120px)
+      const canvasW = Math.min(w - 32, 1400)
+      const canvasH = Math.min(h - 140, 700)
+      setCanvasSize({ w: canvasW, h: canvasH })
+      gameRef.current.W = canvasW
+      gameRef.current.H = canvasH
+    }
+    updateSize()
+    window.addEventListener('resize', updateSize)
+    return () => window.removeEventListener('resize', updateSize)
+  }, [])
+
   const createBricks = useCallback((): Brick[] => {
+    const W = gameRef.current.W
+    const H = gameRef.current.H
     const bricks: Brick[] = []
-    const rows = 6
-    const cols = 8
-    const brickW = 50
-    const brickH = 20
+    const rows = 7
     const padding = 4
-    const offsetX = (CANVAS_WIDTH - cols * (brickW + padding)) / 2
-    const offsetY = 60
+    // Calculate cols to fill width
+    const brickH = Math.max(18, Math.min(24, H / 25))
+    const cols = Math.floor((W - 40) / 70)
+    const brickW = (W - 40 - (cols - 1) * padding) / cols
+    const offsetX = 20
+    const offsetY = 50
 
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const maxHits = r < 2 ? 2 : 1
+        const maxHits = r < 2 ? 3 : r < 4 ? 2 : 1
         bricks.push({
           x: offsetX + c * (brickW + padding),
           y: offsetY + r * (brickH + padding),
@@ -95,13 +119,13 @@ export default function HomePage() {
 
   const spawnParticles = useCallback((x: number, y: number, color: string) => {
     const g = gameRef.current
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) {
       g.particles.push({
         x,
         y,
-        vx: (Math.random() - 0.5) * 6,
-        vy: (Math.random() - 0.5) * 6,
-        size: Math.random() * 3 + 1,
+        vx: (Math.random() - 0.5) * 8,
+        vy: (Math.random() - 0.5) * 8,
+        size: Math.random() * 4 + 1,
         color,
         life: 1,
       })
@@ -110,12 +134,15 @@ export default function HomePage() {
 
   const startGame = useCallback(() => {
     const g = gameRef.current
-    g.ball = { x: 240, y: 500, vx: 3 * (Math.random() > 0.5 ? 1 : -1), vy: -4, radius: 6 }
-    g.paddle = { x: 200, width: 80, height: 12 }
+    const W = g.W
+    const H = g.H
+    g.ball = { x: W / 2, y: H - 80, vx: 4 * (Math.random() > 0.5 ? 1 : -1), vy: -5, radius: 8 }
+    g.paddle = { x: W / 2 - 60, width: 120, height: 14 }
     g.bricks = createBricks()
     g.particles = []
     g.score = 0
     g.lives = 3
+    g.mouseX = W / 2
     setScore(0)
     setLives(3)
     setGameState('playing')
@@ -123,7 +150,13 @@ export default function HomePage() {
 
   const resetBall = useCallback(() => {
     const g = gameRef.current
-    g.ball = { x: g.paddle.x + g.paddle.width / 2, y: 500, vx: 3 * (Math.random() > 0.5 ? 1 : -1), vy: -4, radius: 6 }
+    g.ball = {
+      x: g.paddle.x + g.paddle.width / 2,
+      y: g.H - 80,
+      vx: 4 * (Math.random() > 0.5 ? 1 : -1),
+      vy: -5,
+      radius: 8,
+    }
   }, [])
 
   useEffect(() => {
@@ -142,13 +175,13 @@ export default function HomePage() {
 
     const handleMouseMove = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect()
-      g.mouseX = ((e.clientX - rect.left) / rect.width) * CANVAS_WIDTH
+      g.mouseX = ((e.clientX - rect.left) / rect.width) * g.W
     }
 
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault()
       const rect = canvas.getBoundingClientRect()
-      g.mouseX = ((e.touches[0].clientX - rect.left) / rect.width) * CANVAS_WIDTH
+      g.mouseX = ((e.touches[0].clientX - rect.left) / rect.width) * g.W
     }
 
     canvas.addEventListener('mousemove', handleMouseMove)
@@ -156,22 +189,24 @@ export default function HomePage() {
 
     function gameLoop() {
       const g = gameRef.current
+      const W = g.W
+      const H = g.H
       const ball = g.ball
       const paddle = g.paddle
 
       // Move paddle toward mouse
       const targetX = g.mouseX - paddle.width / 2
       paddle.x += (targetX - paddle.x) * 0.15
-      paddle.x = Math.max(0, Math.min(CANVAS_WIDTH - paddle.width, paddle.x))
+      paddle.x = Math.max(0, Math.min(W - paddle.width, paddle.x))
 
       // Move ball
       ball.x += ball.vx
       ball.y += ball.vy
 
       // Wall collisions
-      if (ball.x - ball.radius <= 0 || ball.x + ball.radius >= CANVAS_WIDTH) {
+      if (ball.x - ball.radius <= 0 || ball.x + ball.radius >= W) {
         ball.vx *= -1
-        ball.x = Math.max(ball.radius, Math.min(CANVAS_WIDTH - ball.radius, ball.x))
+        ball.x = Math.max(ball.radius, Math.min(W - ball.radius, ball.x))
       }
       if (ball.y - ball.radius <= 0) {
         ball.vy *= -1
@@ -179,21 +214,20 @@ export default function HomePage() {
       }
 
       // Paddle collision
+      const paddleTop = H - 40 - paddle.height
       if (
         ball.vy > 0 &&
-        ball.y + ball.radius >= CANVAS_HEIGHT - 30 - paddle.height &&
-        ball.y + ball.radius <= CANVAS_HEIGHT - 30 &&
+        ball.y + ball.radius >= paddleTop &&
+        ball.y + ball.radius <= paddleTop + paddle.height + 4 &&
         ball.x >= paddle.x &&
         ball.x <= paddle.x + paddle.width
       ) {
         ball.vy *= -1
-        ball.y = CANVAS_HEIGHT - 30 - paddle.height - ball.radius
-        // Add spin based on where the ball hits the paddle
+        ball.y = paddleTop - ball.radius
         const hitPos = (ball.x - paddle.x) / paddle.width - 0.5
-        ball.vx = hitPos * 8
-        // Speed up slightly
+        ball.vx = hitPos * 10
         const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy)
-        const maxSpeed = 8
+        const maxSpeed = 9
         if (speed > maxSpeed) {
           ball.vx = (ball.vx / speed) * maxSpeed
           ball.vy = (ball.vy / speed) * maxSpeed
@@ -201,7 +235,7 @@ export default function HomePage() {
       }
 
       // Ball lost
-      if (ball.y + ball.radius > CANVAS_HEIGHT) {
+      if (ball.y + ball.radius > H) {
         g.lives--
         setLives(g.lives)
         if (g.lives <= 0) {
@@ -251,29 +285,46 @@ export default function HomePage() {
         const p = g.particles[i]
         p.x += p.vx
         p.y += p.vy
-        p.life -= 0.03
+        p.life -= 0.025
         if (p.life <= 0) g.particles.splice(i, 1)
       }
 
       // Draw
       if (!ctx) return
-      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+      ctx.clearRect(0, 0, W, H)
 
-      // Background gradient
-      const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT)
+      // Background
+      const grad = ctx.createLinearGradient(0, 0, 0, H)
       grad.addColorStop(0, '#0f0f1a')
       grad.addColorStop(1, '#1a1025')
       ctx.fillStyle = grad
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+      ctx.fillRect(0, 0, W, H)
+
+      // Subtle grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.02)'
+      ctx.lineWidth = 1
+      for (let x = 0; x < W; x += 60) {
+        ctx.beginPath()
+        ctx.moveTo(x, 0)
+        ctx.lineTo(x, H)
+        ctx.stroke()
+      }
+      for (let y = 0; y < H; y += 60) {
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(W, y)
+        ctx.stroke()
+      }
 
       // Bricks
       for (const b of g.bricks) {
-        ctx.fillStyle = b.hits > 0 ? b.color + '99' : b.color
+        const alpha = b.hits === 0 ? 'ff' : b.hits === 1 ? 'bb' : '77'
+        ctx.fillStyle = b.color + alpha
         ctx.beginPath()
         ctx.roundRect(b.x, b.y, b.width, b.height, 4)
         ctx.fill()
-        if (b.maxHits > 1 && b.hits === 0) {
-          ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+        if (b.maxHits > 1 && b.hits < b.maxHits) {
+          ctx.strokeStyle = 'rgba(255,255,255,0.2)'
           ctx.lineWidth = 1
           ctx.stroke()
         }
@@ -289,29 +340,35 @@ export default function HomePage() {
       }
       ctx.globalAlpha = 1
 
-      // Paddle
+      // Paddle glow
+      ctx.shadowColor = '#7c3aed'
+      ctx.shadowBlur = 15
       const paddleGrad = ctx.createLinearGradient(paddle.x, 0, paddle.x + paddle.width, 0)
       paddleGrad.addColorStop(0, '#7c3aed')
-      paddleGrad.addColorStop(1, '#a78bfa')
+      paddleGrad.addColorStop(0.5, '#a78bfa')
+      paddleGrad.addColorStop(1, '#7c3aed')
       ctx.fillStyle = paddleGrad
       ctx.beginPath()
-      ctx.roundRect(paddle.x, CANVAS_HEIGHT - 30 - paddle.height, paddle.width, paddle.height, 6)
+      ctx.roundRect(paddle.x, paddleTop, paddle.width, paddle.height, 7)
       ctx.fill()
+      ctx.shadowBlur = 0
 
-      // Ball
-      ctx.fillStyle = '#e0e7ff'
+      // Ball with glow
       ctx.shadowColor = '#a78bfa'
-      ctx.shadowBlur = 12
+      ctx.shadowBlur = 16
+      ctx.fillStyle = '#e0e7ff'
       ctx.beginPath()
       ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2)
       ctx.fill()
       ctx.shadowBlur = 0
 
       // HUD
-      ctx.fillStyle = 'rgba(255,255,255,0.6)'
-      ctx.font = '13px system-ui, sans-serif'
-      ctx.fillText(`Score: ${g.score}`, 12, 24)
-      ctx.fillText(`Lives: ${'*'.repeat(g.lives)}`, CANVAS_WIDTH - 80, 24)
+      ctx.fillStyle = 'rgba(255,255,255,0.5)'
+      ctx.font = '14px system-ui, sans-serif'
+      ctx.fillText(`Score: ${g.score}`, 16, 28)
+      const livesText = `Lives: ${'* '.repeat(g.lives).trim()}`
+      const livesWidth = ctx.measureText(livesText).width
+      ctx.fillText(livesText, W - livesWidth - 16, 28)
 
       g.animId = requestAnimationFrame(gameLoop)
     }
@@ -326,21 +383,21 @@ export default function HomePage() {
   }, [gameState, highScore, resetBall, spawnParticles])
 
   return (
-    <div className="min-h-screen bg-[#0f0f1a] flex flex-col items-center justify-center p-4">
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-bold text-white/90 tracking-tight">Block Breaker</h1>
+    <div className="min-h-screen bg-[#0f0f1a] flex flex-col items-center justify-center p-4" ref={containerRef}>
+      <div className="text-center mb-4">
+        <h1 className="text-3xl font-bold text-white/90 tracking-tight">Block Breaker</h1>
         {highScore > 0 && (
-          <p className="text-sm text-purple-300/60 mt-1">High Score: {highScore}</p>
+          <p className="text-sm text-purple-300/50 mt-1">High Score: {highScore}</p>
         )}
       </div>
 
-      <div className="relative">
+      <div className="relative w-full flex justify-center">
         <canvas
           ref={canvasRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          className="rounded-2xl border border-white/10 shadow-2xl shadow-purple-900/30 max-w-full"
-          style={{ maxWidth: '480px', width: '100%', aspectRatio: '480/640' }}
+          width={canvasSize.w}
+          height={canvasSize.h}
+          className="rounded-2xl border border-white/10 shadow-2xl shadow-purple-900/30"
+          style={{ width: canvasSize.w, height: canvasSize.h, maxWidth: '100%' }}
         />
 
         {gameState !== 'playing' && (
@@ -348,22 +405,22 @@ export default function HomePage() {
             <div className="text-center px-8">
               {gameState === 'won' && (
                 <>
-                  <p className="text-3xl font-bold text-purple-300 mb-2">You Win!</p>
-                  <p className="text-purple-200/70 mb-6">Score: {score}</p>
+                  <p className="text-4xl font-bold text-purple-300 mb-2">You Win!</p>
+                  <p className="text-lg text-purple-200/70 mb-6">Score: {score}</p>
                 </>
               )}
               {gameState === 'lost' && (
                 <>
-                  <p className="text-3xl font-bold text-purple-300 mb-2">Game Over</p>
-                  <p className="text-purple-200/70 mb-6">Score: {score}</p>
+                  <p className="text-4xl font-bold text-purple-300 mb-2">Game Over</p>
+                  <p className="text-lg text-purple-200/70 mb-6">Score: {score}</p>
                 </>
               )}
               {gameState === 'idle' && (
-                <p className="text-purple-200/50 text-sm mb-6">Move your mouse or finger to control the paddle</p>
+                <p className="text-purple-200/40 text-sm mb-6">Move your mouse or finger to control the paddle</p>
               )}
               <button
                 onClick={startGame}
-                className="px-8 py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-purple-600/30 cursor-pointer"
+                className="px-10 py-3.5 bg-purple-600 hover:bg-purple-500 text-white font-semibold text-lg rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-purple-600/30 cursor-pointer"
               >
                 {gameState === 'idle' ? 'Start Game' : 'Play Again'}
               </button>
@@ -372,7 +429,7 @@ export default function HomePage() {
         )}
       </div>
 
-      <p className="text-xs text-white/20 mt-8">Nothing to see here.</p>
+      <p className="text-xs text-white/15 mt-6">Nothing to see here.</p>
     </div>
   )
 }

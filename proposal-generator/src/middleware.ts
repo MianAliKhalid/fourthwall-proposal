@@ -86,6 +86,11 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(NextResponse.next())
   }
 
+  // Block old login path - redirect to homepage
+  if (pathname === '/login') {
+    return applySecurityHeaders(NextResponse.redirect(new URL('/', request.url)))
+  }
+
   // CSRF protection for mutation requests on API routes
   if (pathname.startsWith('/api/') && !validateCSRF(request)) {
     return applySecurityHeaders(
