@@ -38,10 +38,15 @@ export default function FoldersPage() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
+  // Folder search
+  const [folderFilter, setFolderFilter] = useState('')
+
   // Modals
   const [createModal, setCreateModal] = useState<{ parentId: string | null } | null>(null)
   const [renameModal, setRenameModal] = useState<{ id: string; name: string } | null>(null)
   const [deleteModal, setDeleteModal] = useState<{ id: string; name: string; docCount: number } | null>(null)
+  const [deleteAction, setDeleteAction] = useState<'unfile' | 'move' | 'delete_docs'>('unfile')
+  const [moveToFolderId, setMoveToFolderId] = useState<string>('')
   const [newFolderName, setNewFolderName] = useState('')
   const [renameName, setRenameName] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
@@ -174,22 +179,51 @@ export default function FoldersPage() {
     setActionLoading(false)
   }
 
+  function getAllFolderIds(nodes: FolderNode[]): string[] {
+    const ids: string[] = []
+    for (const n of nodes) {
+      ids.push(n.id)
+      ids.push(...getAllFolderIds(n.children))
+    }
+    return ids
+  }
+
+  function getFirstOtherFolderId(excludeId: string): string | null {
+    const all = getAllFolderIds(folders)
+    return all.find((id) => id !== excludeId) || null
+  }
+
   async function handleDelete() {
     if (!deleteModal) return
     setActionLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/folders/${deleteModal.id}`, { method: 'DELETE' })
+      const params = new URLSearchParams({ action: deleteAction })
+      if (deleteAction === 'move' && moveToFolderId) {
+        params.set('moveToFolderId', moveToFolderId)
+      }
+      const res = await fetch(`/api/folders/${deleteModal.id}?${params}`, { method: 'DELETE' })
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Failed to delete folder')
         setActionLoading(false)
         return
       }
+      const deletedId = deleteModal.id
       setDeleteModal(null)
-      if (selectedFolder === deleteModal.id) {
-        setSelectedFolder(null)
-        setFolderDocs([])
+      setDeleteAction('unfile')
+      setMoveToFolderId('')
+
+      // Auto-select another folder if the deleted one was selected
+      if (selectedFolder === deletedId) {
+        const nextId = getFirstOtherFolderId(deletedId)
+        if (nextId) {
+          setSelectedFolder(nextId)
+          fetchFolderDocs(nextId)
+        } else {
+          setSelectedFolder(null)
+          setFolderDocs([])
+        }
       }
       fetchFolders()
     } catch {
@@ -197,6 +231,29 @@ export default function FoldersPage() {
     }
     setActionLoading(false)
   }
+
+  function getFlatFolders(nodes: FolderNode[], excludeId?: string): { id: string; name: string }[] {
+    const result: { id: string; name: string }[] = []
+    for (const n of nodes) {
+      if (n.id !== excludeId) result.push({ id: n.id, name: n.name })
+      result.push(...getFlatFolders(n.children, excludeId))
+    }
+    return result
+  }
+
+  function filterFolders(nodes: FolderNode[], query: string): FolderNode[] {
+    if (!query) return nodes
+    const q = query.toLowerCase()
+    return nodes.reduce<FolderNode[]>((acc, node) => {
+      const childMatches = filterFolders(node.children, query)
+      if (node.name.toLowerCase().includes(q) || childMatches.length > 0) {
+        acc.push({ ...node, children: childMatches.length > 0 ? childMatches : node.children })
+      }
+      return acc
+    }, [])
+  }
+
+  const displayFolders = filterFolders(folders, folderFilter)
 
   function getFolderName(id: string): string {
     function find(nodes: FolderNode[]): string | null {
@@ -354,8 +411,21 @@ export default function FoldersPage() {
         <div className="flex flex-col lg:flex-row min-h-[500px]">
           {/* Left sidebar - folder tree */}
           <div className="lg:w-[280px] lg:shrink-0 border-b lg:border-b-0 lg:border-r border-gray-200">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Folders</h2>
+            <div className="px-3 py-3 border-b border-gray-100 space-y-2">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-1">Folders</h2>
+              <div className="relative">
+                <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="6.5" cy="6.5" r="5" />
+                  <path d="M10.5 10.5L14.5 14.5" />
+                </svg>
+                <input
+                  type="text"
+                  value={folderFilter}
+                  onChange={(e) => setFolderFilter(e.target.value)}
+                  placeholder="Filter folders..."
+                  className="w-full pl-8 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-100 transition-all"
+                />
+              </div>
             </div>
             <div className="max-h-[500px] overflow-y-auto">
               {loading ? (
@@ -368,14 +438,14 @@ export default function FoldersPage() {
                     </div>
                   ))}
                 </div>
-              ) : folders.length === 0 ? (
+              ) : displayFolders.length === 0 ? (
                 <div className="p-6 text-center">
-                  <p className="text-sm text-gray-500">No folders yet</p>
-                  <p className="text-xs text-gray-400 mt-1">Create a folder to start organizing.</p>
+                  <p className="text-sm text-gray-500">{folderFilter ? 'No matching folders' : 'No folders yet'}</p>
+                  {!folderFilter && <p className="text-xs text-gray-400 mt-1">Create a folder to start organizing.</p>}
                 </div>
               ) : (
                 <div className="py-1">
-                  {folders.map((folder) => (
+                  {displayFolders.map((folder) => (
                     <FolderTreeItem key={folder.id} folder={folder} />
                   ))}
                 </div>
@@ -576,25 +646,65 @@ export default function FoldersPage() {
       {/* Delete Modal */}
       {deleteModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl p-6 max-w-sm w-full mx-4 animate-fade-in-up">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl p-6 max-w-md w-full mx-4 animate-fade-in-up">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Folder</h3>
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">{error}</div>
             )}
-            <p className="text-sm text-gray-500 mb-1">
-              Are you sure you want to delete <span className="font-semibold text-gray-700">{deleteModal.name}</span>?
+            <p className="text-sm text-gray-500 mb-4">
+              Delete <span className="font-semibold text-gray-700">{deleteModal.name}</span>?
+              {deleteModal.docCount > 0 && ` This folder contains ${deleteModal.docCount} document${deleteModal.docCount !== 1 ? 's' : ''}.`}
             </p>
+
             {deleteModal.docCount > 0 && (
-              <p className="text-sm text-amber-600 mb-4">
-                {deleteModal.docCount} document{deleteModal.docCount !== 1 ? 's' : ''} will be moved to no folder.
-              </p>
+              <div className="space-y-2 mb-6">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">What should happen to the documents?</p>
+                <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${deleteAction === 'unfile' ? 'border-brand-300 bg-brand-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                  <input type="radio" name="deleteAction" value="unfile" checked={deleteAction === 'unfile'} onChange={() => setDeleteAction('unfile')} className="text-brand-600 focus:ring-brand-500" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">Remove from folder</p>
+                    <p className="text-xs text-gray-500">Documents will be unfiled but kept.</p>
+                  </div>
+                </label>
+                <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${deleteAction === 'move' ? 'border-brand-300 bg-brand-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                  <input type="radio" name="deleteAction" value="move" checked={deleteAction === 'move'} onChange={() => setDeleteAction('move')} className="text-brand-600 focus:ring-brand-500" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900">Move to another folder</p>
+                    {deleteAction === 'move' && (
+                      <select
+                        value={moveToFolderId}
+                        onChange={(e) => setMoveToFolderId(e.target.value)}
+                        className="mt-2 w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-100 cursor-pointer"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <option value="">Select folder...</option>
+                        {getFlatFolders(folders, deleteModal.id).map((f) => (
+                          <option key={f.id} value={f.id}>{f.name}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                </label>
+                <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors ${deleteAction === 'delete_docs' ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:bg-gray-50'}`}>
+                  <input type="radio" name="deleteAction" value="delete_docs" checked={deleteAction === 'delete_docs'} onChange={() => setDeleteAction('delete_docs')} className="text-red-600 focus:ring-red-500" />
+                  <div>
+                    <p className="text-sm font-medium text-red-700">Delete documents too</p>
+                    <p className="text-xs text-red-500">Documents will be permanently removed.</p>
+                  </div>
+                </label>
+              </div>
             )}
-            <div className="flex gap-3 justify-end mt-6">
-              <button onClick={() => setDeleteModal(null)} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors cursor-pointer">
+
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => { setDeleteModal(null); setDeleteAction('unfile'); setMoveToFolderId('') }} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors cursor-pointer">
                 Cancel
               </button>
-              <button onClick={handleDelete} disabled={actionLoading} className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors cursor-pointer disabled:opacity-50">
-                {actionLoading ? 'Deleting...' : 'Delete'}
+              <button
+                onClick={handleDelete}
+                disabled={actionLoading || (deleteAction === 'move' && !moveToFolderId)}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {actionLoading ? 'Deleting...' : 'Delete Folder'}
               </button>
             </div>
           </div>

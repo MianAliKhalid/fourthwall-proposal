@@ -76,8 +76,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 }
 
-// DELETE /api/folders/[id] - Delete folder (moves docs to no folder)
-export async function DELETE(_request: NextRequest, context: RouteContext) {
+// DELETE /api/folders/[id] - Delete folder
+// Query params: ?action=unfile|move|delete_docs&moveToFolderId=xxx
+export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
     const session = await getSession()
     if (!session.isLoggedIn || !session.userId) {
@@ -85,6 +86,9 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
     }
 
     const { id } = await context.params
+    const { searchParams } = new URL(request.url)
+    const action = searchParams.get('action') || 'unfile'
+    const moveToFolderId = searchParams.get('moveToFolderId')
 
     const existing = await prisma.folder.findFirst({
       where: { id, userId: session.userId },
@@ -106,23 +110,54 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
       )
     }
 
-    // Move documents to no folder, then delete the folder
-    await prisma.$transaction([
-      prisma.document.updateMany({
-        where: { folderId: id },
-        data: { folderId: null },
-      }),
+    const txOps = []
+
+    if (action === 'delete_docs') {
+      // Soft-delete documents by marking them inactive
+      txOps.push(
+        prisma.document.updateMany({
+          where: { folderId: id },
+          data: { isActive: false },
+        })
+      )
+    } else if (action === 'move' && moveToFolderId) {
+      // Verify target folder belongs to user
+      const targetFolder = await prisma.folder.findFirst({
+        where: { id: moveToFolderId, userId: session.userId },
+      })
+      if (!targetFolder) {
+        return NextResponse.json({ error: 'Target folder not found' }, { status: 404 })
+      }
+      txOps.push(
+        prisma.document.updateMany({
+          where: { folderId: id },
+          data: { folderId: moveToFolderId },
+        })
+      )
+    } else {
+      // Default: unfile - move documents to no folder
+      txOps.push(
+        prisma.document.updateMany({
+          where: { folderId: id },
+          data: { folderId: null },
+        })
+      )
+    }
+
+    txOps.push(
       prisma.folder.delete({
         where: { id },
-      }),
-    ])
+      })
+    )
+
+    await prisma.$transaction(txOps)
 
     await createAuditLog(
       session.userId,
       'FOLDER_DELETED',
       'Folder',
       id,
-      { name: existing.name, documentsOrphaned: existing._count.documents }
+      { name: existing.name, action, documentsAffected: existing._count.documents }
     )
 
     return NextResponse.json({ success: true })

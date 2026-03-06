@@ -208,8 +208,8 @@ export default function DocumentsPage() {
   }
 
   function SortIcon({ field }: { field: SortField }) {
-    if (sortBy !== field) return <span className="text-gray-300 ml-1">&#8597;</span>
-    return <span className="text-brand-600 ml-1">{sortOrder === 'asc' ? '&#8593;' : '&#8595;'}</span>
+    if (sortBy !== field) return <span className="text-gray-300 ml-1">{'\u2195'}</span>
+    return <span className="text-brand-600 ml-1">{sortOrder === 'asc' ? '\u2191' : '\u2193'}</span>
   }
 
   return (
@@ -380,11 +380,14 @@ export default function DocumentsPage() {
                     )}
                     <button
                       onClick={() => {
+                        if (actionLoading) return
                         setShareDocId(doc.id)
                         setShareUrl(null)
+                        setCopied(false)
                         handleShare(doc.id)
                       }}
-                      className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors cursor-pointer"
+                      disabled={actionLoading}
+                      className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
                       title="Create Share Link"
                     >
                       <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>

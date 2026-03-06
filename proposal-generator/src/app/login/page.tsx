@@ -49,12 +49,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-brand-50/30 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        {/* Branding */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Plucky Reach</h1>
-          <p className="text-gray-500 text-sm mt-1">Sign in to continue</p>
-        </div>
-
         {/* Login Card */}
         <div className="bg-white rounded-2xl border border-gray-200 shadow-xl shadow-gray-900/[0.04] p-8">
           <form onSubmit={handleSubmit} className="space-y-5">

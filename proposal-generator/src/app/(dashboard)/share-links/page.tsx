@@ -163,6 +163,25 @@ export default function ShareLinksPage() {
     setActionLoading(false)
   }
 
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return
+    setActionLoading(true)
+    try {
+      const promises = Array.from(selectedIds).map((id) =>
+        fetch(`/api/share-links/${id}`, { method: 'DELETE' })
+      )
+      await Promise.all(promises)
+      setSelectedIds(new Set())
+      setBulkDeleteConfirm(false)
+      fetchLinks()
+    } catch {
+      // Silently handle
+    }
+    setActionLoading(false)
+  }
+
   async function copyLink(token: string, id: string) {
     const url = `${window.location.origin}/share/${token}`
     try {
@@ -285,13 +304,22 @@ export default function ShareLinksPage() {
             )}
           </form>
           {selectedIds.size > 0 && (
-            <button
-              onClick={handleBulkDisable}
-              disabled={actionLoading}
-              className="px-4 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer disabled:opacity-50"
-            >
-              Disable {selectedIds.size} selected
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleBulkDisable}
+                disabled={actionLoading}
+                className="px-4 py-1.5 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Disable {selectedIds.size}
+              </button>
+              <button
+                onClick={() => setBulkDeleteConfirm(true)}
+                disabled={actionLoading}
+                className="px-4 py-1.5 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Delete {selectedIds.size}
+              </button>
+            </div>
           )}
         </div>
         {search && (
@@ -472,6 +500,24 @@ export default function ShareLinksPage() {
               </button>
               <button onClick={() => handleDelete(deleteId)} disabled={actionLoading} className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors cursor-pointer disabled:opacity-50">
                 {actionLoading ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Confirmation Modal */}
+      {bulkDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl p-6 max-w-sm w-full mx-4 animate-fade-in-up">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete {selectedIds.size} Share Links</h3>
+            <p className="text-sm text-gray-500 mb-6">This will permanently remove {selectedIds.size} share link{selectedIds.size !== 1 ? 's' : ''}. Anyone with these links will no longer have access.</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setBulkDeleteConfirm(false)} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors cursor-pointer">
+                Cancel
+              </button>
+              <button onClick={handleBulkDelete} disabled={actionLoading} className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors cursor-pointer disabled:opacity-50">
+                {actionLoading ? 'Deleting...' : 'Delete All'}
               </button>
             </div>
           </div>
