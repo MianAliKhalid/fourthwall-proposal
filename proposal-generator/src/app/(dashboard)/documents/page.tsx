@@ -47,6 +47,15 @@ export default function DocumentsPage() {
   const [shareDocId, setShareDocId] = useState<string | null>(null)
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
+  const [folderSearch, setFolderSearch] = useState('')
+  const [showCreateFolder, setShowCreateFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+
+  function showToast(message: string) {
+    setToast(message)
+    setTimeout(() => setToast(null), 2500)
+  }
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true)
@@ -122,6 +131,8 @@ export default function DocumentsPage() {
         body: JSON.stringify({ folderId: moveFolderId || null }),
       })
       if (res.ok) {
+        const targetFolder = folders.find((f) => f.id === moveFolderId)
+        showToast(moveFolderId ? `Moved to ${targetFolder?.name || 'folder'}` : 'Removed from folder')
         fetchDocuments()
       }
     } catch {
@@ -129,6 +140,46 @@ export default function DocumentsPage() {
     }
     setMoveDoc(null)
     setMoveFolderId('')
+    setFolderSearch('')
+    setShowCreateFolder(false)
+    setNewFolderName('')
+    setActionLoading(false)
+  }
+
+  async function handleCreateFolderAndMove() {
+    if (!moveDoc || !newFolderName.trim()) return
+    setActionLoading(true)
+    try {
+      const folderRes = await fetch('/api/folders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newFolderName.trim() }),
+      })
+      const folderData = await folderRes.json()
+      if (folderRes.ok && folderData.folder) {
+        const res = await fetch(`/api/documents/${moveDoc.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folderId: folderData.folder.id }),
+        })
+        if (res.ok) {
+          showToast(`Moved to ${newFolderName.trim()}`)
+          fetchDocuments()
+          // Refresh folders list
+          fetch('/api/folders')
+            .then((r) => r.json())
+            .then((d) => setFolders(d.flatFolders || []))
+            .catch(() => {})
+        }
+      }
+    } catch {
+      // Silently handle
+    }
+    setMoveDoc(null)
+    setMoveFolderId('')
+    setFolderSearch('')
+    setShowCreateFolder(false)
+    setNewFolderName('')
     setActionLoading(false)
   }
 
@@ -144,7 +195,10 @@ export default function DocumentsPage() {
       if (res.ok) {
         const url = `${window.location.origin}/share/${data.shareLink.token}`
         setShareUrl(url)
-        try { await navigator.clipboard.writeText(url) } catch { /* ignore */ }
+        try {
+          await navigator.clipboard.writeText(url)
+          showToast('Link copied to clipboard')
+        } catch { /* ignore */ }
       }
     } catch {
       // Silently handle
@@ -414,18 +468,81 @@ export default function DocumentsPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
           <div className="bg-white rounded-2xl border border-gray-200 shadow-2xl p-6 max-w-sm w-full mx-4 animate-fade-in-up">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Move to Folder</h3>
-            <select
-              value={moveFolderId}
-              onChange={(e) => setMoveFolderId(e.target.value)}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 outline-none focus:border-brand-400 focus:ring-4 focus:ring-brand-100 transition-all mb-6 cursor-pointer"
-            >
-              <option value="">No Folder</option>
-              {folders.map((f) => (
-                <option key={f.id} value={f.id}>{f.name}</option>
-              ))}
-            </select>
+
+            {/* Folder search */}
+            <div className="relative mb-3">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="6.5" cy="6.5" r="5" />
+                <path d="M10.5 10.5L14.5 14.5" />
+              </svg>
+              <input
+                type="text"
+                value={folderSearch}
+                onChange={(e) => setFolderSearch(e.target.value)}
+                placeholder="Search folders..."
+                className="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-brand-400 focus:ring-4 focus:ring-brand-100 transition-all"
+              />
+            </div>
+
+            {/* Folder list */}
+            <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl mb-3">
+              <button
+                onClick={() => setMoveFolderId('')}
+                className={`w-full text-left px-4 py-2.5 text-sm transition-colors cursor-pointer ${moveFolderId === '' ? 'bg-brand-50 text-brand-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                No Folder
+              </button>
+              {folders
+                .filter((f) => !folderSearch || f.name.toLowerCase().includes(folderSearch.toLowerCase()))
+                .map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setMoveFolderId(f.id)}
+                    className={`w-full text-left px-4 py-2.5 text-sm transition-colors cursor-pointer flex items-center gap-2 ${moveFolderId === f.id ? 'bg-brand-50 text-brand-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    <svg className="w-4 h-4 shrink-0 text-gray-400" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M1 4.5A1.5 1.5 0 012.5 3H6l1.5 2h5A1.5 1.5 0 0114 6.5v6a1.5 1.5 0 01-1.5 1.5h-10A1.5 1.5 0 011 12.5v-8z" />
+                    </svg>
+                    {f.name}
+                  </button>
+                ))}
+              {folderSearch && folders.filter((f) => f.name.toLowerCase().includes(folderSearch.toLowerCase())).length === 0 && (
+                <p className="px-4 py-3 text-sm text-gray-400 text-center">No folders found</p>
+              )}
+            </div>
+
+            {/* Create new folder */}
+            {!showCreateFolder ? (
+              <button
+                onClick={() => setShowCreateFolder(true)}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-brand-600 hover:bg-brand-50 rounded-xl transition-colors cursor-pointer mb-4"
+              >
+                <span className="w-4 h-4 flex items-center justify-center text-base leading-none">+</span>
+                Create new folder
+              </button>
+            ) : (
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Folder name"
+                  autoFocus
+                  className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 outline-none focus:bg-white focus:border-brand-400 focus:ring-2 focus:ring-brand-100 transition-all"
+                  onKeyDown={(e) => e.key === 'Enter' && newFolderName.trim() && handleCreateFolderAndMove()}
+                />
+                <button
+                  onClick={handleCreateFolderAndMove}
+                  disabled={actionLoading || !newFolderName.trim()}
+                  className="px-3 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Create & Move
+                </button>
+              </div>
+            )}
+
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setMoveDoc(null)} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors cursor-pointer">
+              <button onClick={() => { setMoveDoc(null); setFolderSearch(''); setShowCreateFolder(false); setNewFolderName('') }} className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl border border-gray-200 transition-colors cursor-pointer">
                 Cancel
               </button>
               <button onClick={handleMove} disabled={actionLoading} className="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-colors cursor-pointer disabled:opacity-50">
@@ -433,6 +550,13 @@ export default function DocumentsPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] px-4 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-xl shadow-lg animate-fade-in-up">
+          {toast}
         </div>
       )}
 
@@ -463,7 +587,12 @@ export default function DocumentsPage() {
                 Close
               </button>
               <button
-                onClick={async () => { try { await navigator.clipboard.writeText(shareUrl) } catch { /* ignore */ } }}
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(shareUrl)
+                    showToast('Link copied to clipboard')
+                  } catch { /* ignore */ }
+                }}
                 className="px-4 py-2 text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 rounded-xl transition-colors cursor-pointer"
               >
                 Copy Again
