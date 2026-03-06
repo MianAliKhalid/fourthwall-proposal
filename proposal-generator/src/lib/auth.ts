@@ -73,7 +73,7 @@ export async function getCurrentUser(session: IronSession<SessionData>) {
 }
 
 /**
- * Require authentication. Redirects to /login if not logged in.
+ * Require authentication. Redirects to / if not logged in.
  * Use in server components / route handlers.
  */
 export async function requireAuth(session: IronSession<SessionData>) {
@@ -91,7 +91,7 @@ export async function requireAuth(session: IronSession<SessionData>) {
 }
 
 /**
- * Require admin role. Redirects to /login if not admin.
+ * Require admin role. Redirects to / if not admin.
  */
 export async function requireAdmin(session: IronSession<SessionData>) {
   const user = await requireAuth(session)
