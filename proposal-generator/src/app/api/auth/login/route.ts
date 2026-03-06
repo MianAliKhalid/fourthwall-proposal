@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
       ttl: 8 * 60 * 60,
       cookieOptions: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: request.headers.get('x-forwarded-proto') === 'https' || request.nextUrl.protocol === 'https:',
         sameSite: 'lax' as const,
       },
     })

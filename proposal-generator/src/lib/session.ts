@@ -14,7 +14,7 @@ const sessionOptions = {
   ttl: 8 * 60 * 60, // 8 hours in seconds
   cookieOptions: {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     sameSite: 'lax' as const,
   },
 }
