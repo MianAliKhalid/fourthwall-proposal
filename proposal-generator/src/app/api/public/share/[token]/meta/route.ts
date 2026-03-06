@@ -24,6 +24,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
             clientName: true,
             isActive: true,
             pdfUrl: true,
+            productsJson: true,
           },
         },
       },
@@ -45,7 +46,8 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'This document is no longer available.' }, { status: 410 })
     }
 
-    if (!shareLink.document.pdfUrl) {
+    const products = shareLink.document.productsJson as unknown[]
+    if (!shareLink.document.pdfUrl && (!products || !Array.isArray(products) || products.length === 0)) {
       return NextResponse.json({ error: 'PDF not available for this document.' }, { status: 404 })
     }
 

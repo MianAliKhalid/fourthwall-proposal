@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { generatePdfBuffer } from '@/lib/pdf-server'
 
 type RouteContext = { params: Promise<{ token: string }> }
 
@@ -64,7 +65,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
             id: true,
             title: true,
             clientName: true,
+            clientTagline: true,
             pdfUrl: true,
+            productsJson: true,
             isActive: true,
           },
         },
@@ -90,8 +93,9 @@ export async function GET(request: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'This document is no longer available.' }, { status: 410 })
     }
 
-    // Check if PDF URL exists
-    if (!shareLink.document.pdfUrl) {
+    // Check if document has content
+    const products = shareLink.document.productsJson as unknown[]
+    if ((!products || !Array.isArray(products) || products.length === 0) && !shareLink.document.pdfUrl) {
       return NextResponse.json({ error: 'PDF not available for this document.' }, { status: 404 })
     }
 
@@ -123,13 +127,25 @@ export async function GET(request: NextRequest, context: RouteContext) {
       // Don't fail the request if audit logging fails
     }
 
-    // Fetch the PDF from the stored URL
-    const pdfResponse = await fetch(shareLink.document.pdfUrl)
-    if (!pdfResponse.ok) {
-      return NextResponse.json({ error: 'Failed to retrieve PDF.' }, { status: 502 })
+    let pdfBuffer: ArrayBuffer
+
+    if (shareLink.document.pdfUrl) {
+      // Fetch from stored URL
+      const pdfResponse = await fetch(shareLink.document.pdfUrl)
+      if (!pdfResponse.ok) {
+        return NextResponse.json({ error: 'Failed to retrieve PDF.' }, { status: 502 })
+      }
+      pdfBuffer = await pdfResponse.arrayBuffer()
+    } else {
+      // Generate PDF on the fly from productsJson
+      const buffer = generatePdfBuffer({
+        products: products as Parameters<typeof generatePdfBuffer>[0]['products'],
+        clientName: shareLink.document.clientName,
+        clientTagline: shareLink.document.clientTagline || '',
+      })
+      pdfBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
     }
 
-    const pdfBuffer = await pdfResponse.arrayBuffer()
     const filename = `${shareLink.document.title.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-')}.pdf`
 
     return new NextResponse(pdfBuffer, {
