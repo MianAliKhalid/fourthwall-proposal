@@ -63,7 +63,7 @@ export default function AdminUsersPage() {
   async function handleToggleActive(user: User) {
     setActionLoading(user.id)
     try {
-      const res = await fetch(`/api/admin/users/${user.id}`, {
+      const res = await fetch(`/api/centralsystem/admin/users/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !user.isActive }),
@@ -82,7 +82,7 @@ export default function AdminUsersPage() {
   async function handleRoleChange(user: User, newRole: 'ADMIN' | 'USER') {
     setActionLoading(user.id)
     try {
-      const res = await fetch(`/api/admin/users/${user.id}`, {
+      const res = await fetch(`/api/centralsystem/admin/users/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role: newRole }),
@@ -102,7 +102,7 @@ export default function AdminUsersPage() {
     setDetailLoading(true)
     setSelectedUser({ user, logs: [] })
     try {
-      const res = await fetch(`/api/admin/users/${user.id}`)
+      const res = await fetch(`/api/centralsystem/admin/users/${user.id}`)
       const data = await res.json()
       setSelectedUser({ user: data.user, logs: data.recentLogs || [] })
     } catch {
@@ -260,7 +260,7 @@ export default function AdminUsersPage() {
                   {/* Actions */}
                   <div className="col-span-3 flex items-center justify-end gap-1">
                     <a
-                      href={`/admin/users/${user.id}`}
+                      href={`/centralsystem/admin/users/${user.id}`}
                       className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-brand-600 hover:bg-brand-50 border border-brand-200 rounded-lg transition-colors"
                     >
                       Profile

@@ -70,7 +70,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
       params.set('userId', id)
       if (actionFilter) params.set('action', actionFilter)
 
-      const res = await fetch(`/api/admin/logs?${params}`)
+      const res = await fetch(`/api/centralsystem/admin/logs?${params}`)
       const data = await res.json()
       setLogs(data.logs || [])
       setLogsTotal(data.pagination?.total || 0)
@@ -306,7 +306,7 @@ export default function AdminUserDetailPage({ params }: { params: Promise<{ id: 
                 <option value="ADMIN">Role: Admin</option>
               </select>
               <Link
-                href={`/admin/logs?userId=${id}`}
+                href={`/centralsystem/admin/logs?userId=${id}`}
                 className="px-4 py-2 text-sm font-medium text-brand-700 bg-brand-50 border border-brand-200 rounded-xl hover:bg-brand-100 transition-colors"
               >
                 View All Logs

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 
 const adminNavItems = [
   {
-    href: '/admin',
+    href: '/centralsystem/admin',
     label: 'Overview',
     icon: (
       <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -17,7 +17,7 @@ const adminNavItems = [
     ),
   },
   {
-    href: '/admin/users',
+    href: '/centralsystem/admin/users',
     label: 'Users',
     icon: (
       <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -29,7 +29,7 @@ const adminNavItems = [
     ),
   },
   {
-    href: '/admin/logs',
+    href: '/centralsystem/admin/logs',
     label: 'Audit Logs',
     icon: (
       <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -39,7 +39,7 @@ const adminNavItems = [
     ),
   },
   {
-    href: '/admin/documents',
+    href: '/centralsystem/admin/documents',
     label: 'Documents',
     icon: (
       <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -48,7 +48,7 @@ const adminNavItems = [
     ),
   },
   {
-    href: '/admin/share-links',
+    href: '/centralsystem/admin/share-links',
     label: 'Share Links',
     icon: (
       <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -84,7 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Sub-navigation */}
         <nav className="flex items-center gap-1 overflow-x-auto pb-1">
           {adminNavItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
+            const isActive = pathname === item.href || (item.href !== '/centralsystem/admin' && pathname.startsWith(item.href))
             return (
               <Link
                 key={item.href}

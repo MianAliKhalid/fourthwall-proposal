@@ -72,10 +72,10 @@ export default function AdminOverviewPage() {
   }
 
   const statCards = [
-    { label: 'Total Users', value: stats?.totalUsers ?? 0, href: '/admin/users', color: 'bg-blue-50 text-blue-700' },
-    { label: 'Active Users', value: stats?.activeUsers ?? 0, href: '/admin/users?status=active', color: 'bg-green-50 text-green-700' },
-    { label: 'Documents', value: stats?.totalDocuments ?? 0, href: '/admin/documents', color: 'bg-purple-50 text-purple-700' },
-    { label: 'Share Links', value: stats?.totalShareLinks ?? 0, href: '/admin/share-links', color: 'bg-amber-50 text-amber-700' },
+    { label: 'Total Users', value: stats?.totalUsers ?? 0, href: '/centralsystem/admin/users', color: 'bg-blue-50 text-blue-700' },
+    { label: 'Active Users', value: stats?.activeUsers ?? 0, href: '/centralsystem/admin/users?status=active', color: 'bg-green-50 text-green-700' },
+    { label: 'Documents', value: stats?.totalDocuments ?? 0, href: '/centralsystem/admin/documents', color: 'bg-purple-50 text-purple-700' },
+    { label: 'Share Links', value: stats?.totalShareLinks ?? 0, href: '/centralsystem/admin/share-links', color: 'bg-amber-50 text-amber-700' },
   ]
 
   return (
