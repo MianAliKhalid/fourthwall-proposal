@@ -143,7 +143,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         clientName: shareLink.document.clientName,
         clientTagline: shareLink.document.clientTagline || '',
       })
-      pdfBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength)
+      pdfBuffer = new Uint8Array(buffer).buffer
     }
 
     const filename = `${shareLink.document.title.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-')}.pdf`
